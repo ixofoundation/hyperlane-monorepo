@@ -12,6 +12,7 @@
     "@hyperlane-xyz/sdk": "8.6.1",
     "@hyperlane-xyz/utils": "8.6.1",
     "@interchain-ui/react": "^1.23.28",
+    "@ixo/impactxclient-sdk": "^2.3.1",
     "@rainbow-me/rainbowkit": "^2.2.0",
     "@solana/wallet-adapter-react": "^0.15.32",
     "@solana/wallet-adapter-react-ui": "^0.9.31",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@chakra-ui/react": "^2.8.2",
     "@cosmjs/cosmwasm-stargate": "^0.32.4",
+    "@cosmjs/stargate": "^0.32.4",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@eslint/js": "^9.15.0",

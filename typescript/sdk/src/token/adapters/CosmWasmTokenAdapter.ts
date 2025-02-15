@@ -299,19 +299,18 @@ export class CwHypSyntheticAdapter
   async quoteTransferRemoteGas(
     _destination: Domain,
   ): Promise<InterchainGasQuote> {
-    // TODO this may require separate queries to get the hook and/or mailbox
-    // before making a query for the QuoteDispatchResponse
-    // Punting on this given that only static quotes are used for now
     // const resp = await this.queryRouter<QuoteDispatchResponse>({
     //   router: {
-    //     TODO: {},
+    //     quote_dispatch: {
+    //       destination_domain: destination,
+    //     },
     //   },
     // });
-    // return {
-    //   amount: BigInt(resp.gas_amount?.amount || 0),
-    //   addressOrDenom: resp.gas_amount?.denom,
-    // };
-    throw new Error('CW adapter quoteTransferRemoteGas method not implemented');
+
+    return {
+      amount: BigInt(14000),
+      addressOrDenom: 'uixo',
+    };
   }
 
   async populateTransferRemoteTx({

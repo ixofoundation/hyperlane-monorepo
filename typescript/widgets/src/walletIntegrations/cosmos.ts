@@ -1,10 +1,12 @@
 import type { AssetList, Chain as CosmosChain } from '@chain-registry/types';
-import type {
-  DeliverTxResponse,
-  ExecuteResult,
-  IndexedTx,
+import {
+  type DeliverTxResponse,
+  type ExecuteResult,
+  type IndexedTx,
 } from '@cosmjs/cosmwasm-stargate';
+import { GasPrice } from '@cosmjs/stargate';
 import { useChain, useChains } from '@cosmos-kit/react';
+import { cosmwasm, createSigningClient } from '@ixo/impactxclient-sdk';
 import { useCallback, useMemo } from 'react';
 
 import { cosmoshub } from '@hyperlane-xyz/registry';
@@ -134,18 +136,34 @@ export function useCosmosTransactionFns(
         await onSwitchNetwork(chainName);
 
       logger.debug(`Sending tx on chain ${chainName}`);
-      const { getSigningCosmWasmClient, getSigningStargateClient } =
-        chainContext;
+      const { getSigningStargateClient } = chainContext;
       let result: ExecuteResult | DeliverTxResponse;
       let txDetails: IndexedTx | null;
       if (tx.type === ProviderType.CosmJsWasm) {
-        const client = await getSigningCosmWasmClient();
-        result = await client.executeMultiple(
-          chainContext.address,
-          [tx.transaction],
-          'auto',
+        const ixoClient = await createSigningClient(
+          (await chainContext.getRpcEndpoint(false)) as string,
+          chainContext.getOfflineSignerDirect(),
+          false,
+          { gasPrice: GasPrice.fromString('0.025uixo') },
         );
-        txDetails = await client.getTx(result.transactionHash);
+
+        result = await ixoClient.signAndBroadcast(
+          chainContext.address,
+          [
+            {
+              typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
+              value: cosmwasm.wasm.v1.MsgExecuteContract.fromPartial({
+                sender: chainContext.address,
+                contract: tx.transaction.contractAddress,
+                msg: JsonToArray(JSON.stringify(tx.transaction.msg)),
+                funds: [...(tx.transaction.funds || [])],
+              }),
+            },
+          ],
+          2,
+        );
+
+        txDetails = await ixoClient.getTx(result.transactionHash);
       } else if (tx.type === ProviderType.CosmJs) {
         const client = await getSigningStargateClient();
         // The fee param of 'auto' here stopped working for Neutron-based IBC transfers
@@ -164,6 +182,7 @@ export function useCosmosTransactionFns(
 
       const confirm = async (): Promise<TypedTransactionReceipt> => {
         assert(txDetails, `Cosmos tx failed: ${JSON.stringify(result)}`);
+        // @ts-ignore
         return {
           type: tx.type,
           receipt: { ...txDetails, transactionHash: result.transactionHash },
@@ -206,3 +225,8 @@ export function getCosmosKitChainConfigs(
     assets: configList.map((c) => c.assets),
   };
 }
+
+// JSON to Uint8Array parsing and visa versa
+export const JsonToArray = function (json: string) {
+  return new Uint8Array(Buffer.from(json));
+};

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # set script location as working directory
 cd "$(dirname "$0")"
@@ -13,13 +13,18 @@ outputFileTsd="./dist/buildArtifact.d.ts"
 # log that we're in the script
 echo 'Finding and processing hardhat build artifact...'
 
+if [ ! -d "$artifactsDir" ]; then
+  echo "Artifacts directory not found at $artifactsDir"
+  exit 1
+fi
+
 # Find most recently modified JSON build artifact
 if [ "$(uname)" = "Darwin" ]; then
-    # for local flow
-    jsonFiles=$(find "$artifactsDir" -type f -name "*.json" -exec stat -f "%m %N" {} \; | sort -rn | head -n 1 | cut -d' ' -f2-)
+  # for local flow
+  jsonFiles=$(find "$artifactsDir" -type f -name "*.json" -exec stat -c "%Y %n" {} \; | sort -rn | head -n 1 | cut -d' ' -f2-)
 else
-    # for CI flow
-    jsonFiles=$(find "$artifactsDir" -type f -name "*.json" -exec stat -c "%Y %n" {} \; | sort -rn | head -n 1 | cut -d' ' -f2-)
+  # for CI flow
+  jsonFiles=$(find "$artifactsDir" -type f -name "*.json" -exec stat -c "%Y %n" {} \; | sort -rn | head -n 1 | cut -d' ' -f2-)
 fi
 
 if [ ! -f "$jsonFiles" ]; then
@@ -28,10 +33,10 @@ if [ ! -f "$jsonFiles" ]; then
 fi
 
 # Extract required keys and write to outputFile
-if jq -c '{input, solcLongVersion}' "$jsonFiles" > "$outputFileJson"; then
-  echo "export const buildArtifact = " > "$outputFileJs"
-  cat "$outputFileJson" >> "$outputFileJs"
-  echo "export const buildArtifact: any" > "$outputFileTsd"
+if jq -c '{input, solcLongVersion}' "$jsonFiles" >"$outputFileJson"; then
+  echo "export const buildArtifact = " >"$outputFileJs"
+  cat "$outputFileJson" >>"$outputFileJs"
+  echo "export const buildArtifact: any" >"$outputFileTsd"
   echo 'Finished processing build artifact.'
 else
   echo 'Failed to process build artifact with jq'
